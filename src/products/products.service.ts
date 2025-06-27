@@ -10,7 +10,9 @@ export class ProductsService {
   private readonly logger = new Logger('ProductsService');
 
   create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+    return this.prisma.product.create({
+      data: createProductDto,
+    });
   }
 
   findAll() {
