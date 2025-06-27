@@ -15,10 +15,17 @@ datasource db {
 }
 
 model Product {
-  id    Int    @id @default(autoincrement())
-  name  String
-  price Float
+  id        Int     @id @default(autoincrement())
+  name      String
+  price     Float
+  available Boolean @default(true)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Para soft delete en lugar de borrar físicamente
+
+  @@index([name]) // Búsquedas por nombre
+  @@index([available]) // Filtrar por disponibilidad
+  @@index([price]) // Ordenar/filtrar por precio
+  @@index([createdAt]) // Ordenar por fecha de creación
 }
