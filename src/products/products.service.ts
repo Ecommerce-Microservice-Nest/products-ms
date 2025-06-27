@@ -63,6 +63,7 @@ export class ProductsService {
     if (!updateProductDto) {
       throw new BadRequestException('Update data is required');
     }
+
     await this.findOne(id);
     return await this.prisma.product.update({
       where: { id },
