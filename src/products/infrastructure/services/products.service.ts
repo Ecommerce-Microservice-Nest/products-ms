@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/database/prisma/prisma.service';
 import { PaginationDto } from 'src/common';
 import { FindAllProductsUseCase } from '../../application/use-cases/find-all-products.use-case';
 import {
@@ -8,16 +7,17 @@ import {
   UpdateProductDto,
   GetOneProductUseCase,
   UpdateProductUseCase,
+  RemoveProductUseCase,
 } from 'src/products/application';
 
 @Injectable()
 export class ProductsService {
   constructor(
-    private prisma: PrismaService,
     private readonly createProductUseCase: CreateProductUseCase,
     private readonly findAllProductsUseCase: FindAllProductsUseCase,
     private readonly getOneProductUseCase: GetOneProductUseCase,
     private readonly updateProductUseCase: UpdateProductUseCase,
+    private readonly removeProductUseCase: RemoveProductUseCase,
   ) {}
 
   private readonly logger = new Logger('ProductsService');
@@ -43,10 +43,6 @@ export class ProductsService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
-    return await this.prisma.product.update({
-      where: { id },
-      data: { available: false, deletedAt: new Date() },
-    });
+    return await this.removeProductUseCase.execute(id);
   }
 }
