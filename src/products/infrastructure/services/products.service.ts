@@ -7,6 +7,7 @@ import {
   CreateProductDto,
   UpdateProductDto,
   GetOneProductUseCase,
+  UpdateProductUseCase,
 } from 'src/products/application';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class ProductsService {
     private readonly createProductUseCase: CreateProductUseCase,
     private readonly findAllProductsUseCase: FindAllProductsUseCase,
     private readonly getOneProductUseCase: GetOneProductUseCase,
+    private readonly updateProductUseCase: UpdateProductUseCase,
   ) {}
 
   private readonly logger = new Logger('ProductsService');
@@ -37,11 +39,7 @@ export class ProductsService {
       throw new BadRequestException('Update data is required');
     }
 
-    await this.findOne(id);
-    return await this.prisma.product.update({
-      where: { id },
-      data: updateProductDto,
-    });
+    return await this.updateProductUseCase.execute(id, updateProductDto);
   }
 
   async remove(id: number) {

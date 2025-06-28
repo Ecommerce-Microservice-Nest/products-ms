@@ -4,6 +4,7 @@ import {
   CreateProductUseCase,
   FindAllProductsUseCase,
   GetOneProductUseCase,
+  UpdateProductUseCase,
 } from './application';
 import {
   ProductsController,
@@ -18,6 +19,7 @@ import {
     CreateProductUseCase,
     FindAllProductsUseCase,
     GetOneProductUseCase,
+    UpdateProductUseCase,
     {
       provide: 'PRODUCT_REPOSITORY',
       useClass: PrismaProductRepository,
