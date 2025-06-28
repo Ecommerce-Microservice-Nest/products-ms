@@ -1,10 +1,21 @@
 {
   "name": "products-ms",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Enterprise-grade products microservice for e-commerce with TCP communication",
+  "author": "Dieguidev",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ecommerce-Microservice-Nest/products-ms"
+  },
+  "keywords": [
+    "nestjs",
+    "microservice",
+    "ecommerce",
+    "prisma",
+    "tcp"
+  ],
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
