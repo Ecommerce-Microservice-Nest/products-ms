@@ -24,13 +24,56 @@ This microservice handles all product-related operations for an e-commerce ecosy
 ### ✨ Key Features
 
 - **🔧 TCP Microservice**: Message-pattern based communication for optimal performance
-- **📊 Complete CRUD Operations**: Full product lifecycle management
+- **📊 Complete CRUD Operations**: Full product lifecycle management with use cases
 - **🗄️ Prisma ORM Integration**: Type-safe database operations with SQLite
 - **✅ Data Validation**: Comprehensive input validation using DTOs and class-validator
 - **🔍 Advanced Querying**: Pagination, filtering, and soft-delete capabilities
-- **🏗️ Clean Architecture**: Modular design following NestJS best practices
+- **🏗️ Clean Architecture**: Domain-driven design with use cases, repositories, and dependency injection
+- **🎯 SOLID Principles**: Repository pattern, dependency injection, and separation of concerns
+- **🚀 RPC Exception Handling**: Proper microservice error handling with structured responses
 - **📈 Production Ready**: Built with scalability and maintainability in mind
 - **🔒 Type Safety**: Full TypeScript implementation with strict typing
+
+## 🏛️ Clean Architecture Implementation
+
+This microservice follows **Clean Architecture** principles with clear separation of concerns across three main layers:
+
+### 🎯 **Domain Layer** (`domain/`)
+
+- **Entities**: Core business objects with business logic (`Product.entity.ts`)
+- **Interfaces**: Domain contracts (`MetaDataAllProducts`)
+- **Exceptions**: Business rule violations (future implementation)
+- **Value Objects**: Complex domain types (future implementation)
+
+### 🔄 **Application Layer** (`application/`)
+
+- **Use Cases**: Business logic orchestration (`CreateProductUseCase`, `FindAllProductsUseCase`, etc.)
+- **DTOs**: Data transfer and validation objects
+- **Ports**: Repository interfaces and contracts (`IProductRepository`)
+- **Services**: Application services (not business logic)
+
+### 🏗️ **Infrastructure Layer** (`infrastructure/`)
+
+- **Controllers**: HTTP/TCP adapters (`ProductsController`)
+- **Repositories**: Data persistence implementations (`PrismaProductRepository`)
+- **Services**: Technical services orchestrating use cases (`ProductsService`)
+- **External**: Third-party integrations
+
+### 🔗 **Dependency Flow**
+
+```
+Infrastructure → Application → Domain
+     ↓              ↓           ↓
+Controllers → Use Cases → Entities
+Repositories → Ports → Interfaces
+```
+
+**Benefits:**
+
+- ✅ **Testability**: Easy to mock dependencies and test business logic
+- ✅ **Maintainability**: Clear separation makes code easy to modify
+- ✅ **Scalability**: Add features without affecting existing code
+- ✅ **Independence**: Domain logic independent of frameworks and databases
 
 ## 🏗️ Architecture
 
@@ -49,15 +92,33 @@ src/
 │   └── prisma/
 │       ├── prisma.module.ts       # Prisma module configuration
 │       └── prisma.service.ts      # Prisma service implementation
-└── products/                       # Products domain module
-    ├── products.controller.ts      # TCP message patterns
-    ├── products.service.ts         # Business logic layer
-    ├── products.module.ts          # Products module definition
-    ├── dto/                        # Data Transfer Objects
-    │   ├── create-product.dto.ts   # Creation validation
-    │   └── update-product.dto.ts   # Update validation
-    └── entities/                   # Domain entities
-        └── product.entity.ts       # Product domain model
+└── products/                       # Products domain module (Clean Architecture)
+    ├── products.module.ts          # Module definition with DI configuration
+    ├── application/                # Application layer (Use Cases & DTOs)
+    │   ├── dto/
+    │   │   ├── create-product.dto.ts   # Creation validation
+    │   │   └── update-product.dto.ts   # Update validation
+    │   ├── ports/
+    │   │   └── product-repository.interface.ts  # Repository contract
+    │   └── use-cases/
+    │       ├── create-product.use-case.ts       # Create product business logic
+    │       ├── find-all-products.use-case.ts    # List products with pagination
+    │       ├── get-one-product.use-case.ts      # Find product by ID
+    │       ├── update-product.use-case.ts       # Update product business logic
+    │       └── remove-product.use-case.ts       # Soft delete business logic
+    ├── domain/                     # Domain layer (Entities & Interfaces)
+    │   ├── entities/
+    │   │   └── product.entity.ts   # Product domain model with business logic
+    │   ├── interfaces/
+    │   │   └── meta-data-all-products.interface.ts  # Pagination metadata
+    │   └── exceptions/             # Domain-specific exceptions (future)
+    └── infrastructure/             # Infrastructure layer (Controllers, Services, Repositories)
+        ├── controllers/
+        │   └── products.controller.ts  # TCP message patterns
+        ├── services/
+        │   └── products.service.ts     # Service orchestrating use cases
+        └── persistence/
+            └── product-prisma.repository.ts  # Prisma repository implementation
 
 prisma/
 ├── schema.prisma                   # Database schema definition
@@ -74,13 +135,29 @@ prisma/
                                                    │
                                                    ▼
                                         ┌─────────────────┐
-                                        │ Products Service │
+                                        │ Products Service │ (Orchestrates Use Cases)
                                         └─────────────────┘
                                                    │
+                                        ┌──────────────────────────────┐
+                                        │          Use Cases           │
+                                        │ ┌─────────────────────────┐  │
+                                        │ │ CreateProductUseCase    │  │
+                                        │ │ FindAllProductsUseCase  │  │
+                                        │ │ GetOneProductUseCase    │  │
+                                        │ │ UpdateProductUseCase    │  │
+                                        │ │ RemoveProductUseCase    │  │
+                                        │ └─────────────────────────┘  │
+                                        └──────────────────────────────┘
+                                                   │
                                                    ▼
-                                        ┌─────────────────┐
-                                        │ Prisma Service  │
-                                        └─────────────────┘
+                                        ┌─────────────────────────┐
+                                        │ IProductRepository      │ (Port)
+                                        └─────────────────────────┘
+                                                   │
+                                                   ▼
+                                        ┌─────────────────────────┐
+                                        │ PrismaProductRepository │ (Adapter)
+                                        └─────────────────────────┘
                                                    │
                                                    ▼
                                         ┌─────────────────┐
@@ -94,13 +171,13 @@ This service communicates via **TCP transport** using message patterns. It's des
 
 ### 📡 Available Message Patterns
 
-| Pattern Command    | Description                 | Payload                               |
-| ------------------ | --------------------------- | ------------------------------------- |
-| `create_product`   | Create a new product        | `CreateProductDto`                    |
-| `get_all_products` | Get paginated products list | `PaginationDto`                       |
-| `find_one_product` | Get product by ID           | `{ id: number }`                      |
-| `update_product`   | Update existing product     | `{ id: number, ...UpdateProductDto }` |
-| `delete_product`   | Soft delete product         | `{ id: number }`                      |
+| Pattern Command    | Description                 | Payload            | Use Case                 |
+| ------------------ | --------------------------- | ------------------ | ------------------------ |
+| `create_product`   | Create a new product        | `CreateProductDto` | `CreateProductUseCase`   |
+| `get_all_products` | Get paginated products list | `PaginationDto`    | `FindAllProductsUseCase` |
+| `find_one_product` | Get product by ID           | `{ id: number }`   | `GetOneProductUseCase`   |
+| `update_product`   | Update existing product     | `UpdateProductDto` | `UpdateProductUseCase`   |
+| `delete_product`   | Soft delete product         | `{ id: number }`   | `RemoveProductUseCase`   |
 
 ### 📞 Client Communication Example
 
@@ -210,10 +287,11 @@ npm run test:debug
 
 ### 🎯 Testing Strategy
 
-- **Unit Tests**: Service and controller logic
-- **Integration Tests**: Database operations with Prisma
-- **E2E Tests**: Complete microservice communication flow
+- **Unit Tests**: Use cases, services, and controller logic testing
+- **Integration Tests**: Database operations with Prisma and repository pattern
+- **E2E Tests**: Complete microservice communication flow with TCP transport
 - **Coverage Reports**: Minimum 80% coverage target
+- **Mocking**: Repository interfaces for isolated unit testing
 
 ## 📊 Database Schema
 
@@ -246,33 +324,25 @@ model Product {
 
 ## 🔧 Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (copy from `.env.template`):
 
 ```env
 # Microservice Configuration
 PORT=3001
-NODE_ENV=development
 
 # Database Configuration
 DATABASE_URL="file:./dev.db"
 
-# For PostgreSQL (production)
+# Optional: For PostgreSQL (production)
 # DATABASE_URL="postgresql://username:password@localhost:5432/products_db"
 
-# For MySQL (alternative)
+# Optional: For MySQL (alternative)
 # DATABASE_URL="mysql://username:password@localhost:3306/products_db"
-
-# Logging Level (optional)
-LOG_LEVEL=debug
-
-# Security (for production)
-# JWT_SECRET=your-super-secret-key
-# CORS_ORIGIN=https://yourdomain.com
 ```
 
 ### ⚙️ Environment Validation
 
-The application uses **Joi** for environment variable validation, ensuring all required configurations are present and properly formatted at startup.
+The application uses **Joi** for environment variable validation in `src/config/envs.ts`, ensuring all required configurations are present and properly formatted at startup. Only `PORT` and `DATABASE_URL` are required.
 
 ## 📝 Usage Examples
 
@@ -365,16 +435,21 @@ const deletedProduct = await client
 
 ### Code Style
 
-- Follow TypeScript and NestJS best practices
-- Use DTOs for data validation
-- Implement proper error handling
-- Write comprehensive tests
+- Follow **Clean Architecture** principles and SOLID design patterns
+- Use **Use Cases** for business logic separation
+- Implement **Repository Pattern** with dependency injection
+- Use DTOs for data validation and transformation
+- Implement proper error handling with **RpcException** for microservices
+- Write comprehensive tests for each layer (Domain, Application, Infrastructure)
 
 ### Folder Structure
 
-- Keep modules organized by domain (products, orders, etc.)
-- Separate DTOs, entities, and services
-- Use barrel exports for cleaner imports
+- Follow **Clean Architecture** layers: `domain/`, `application/`, `infrastructure/`
+- Keep use cases in `application/use-cases/` with single responsibility
+- Separate DTOs, ports (interfaces), and entities properly
+- Use barrel exports (`index.ts`) for cleaner imports and layer isolation
+- Domain entities should contain business logic and transformations
+- Repository interfaces belong in `application/ports/`
 
 ## 🚀 Deployment
 
@@ -467,25 +542,33 @@ chore: maintenance tasks
 
 ### 🎯 Phase 1 - Core Features ✅
 
-- [x] Basic CRUD operations
-- [x] TCP microservice implementation
-- [x] Prisma ORM integration
-- [x] Data validation and DTOs
-- [x] Soft delete functionality
+- [x] **Clean Architecture Implementation**: Domain, Application, Infrastructure layers
+- [x] **Use Cases Pattern**: Separated business logic into use cases
+- [x] **Repository Pattern**: Interface segregation and dependency injection
+- [x] **Domain Entity**: Product entity with business logic and transformations
+- [x] **TCP Microservice**: Message-pattern based communication
+- [x] **Complete CRUD Operations**: All operations with use cases
+- [x] **Prisma ORM Integration**: Type-safe database operations
+- [x] **Data Validation**: DTOs with class-validator
+- [x] **Soft Delete**: Logical deletion with available flag
+- [x] **RPC Exception Handling**: Proper microservice error responses
 
 ### 🎯 Phase 2 - Enhanced Features
 
-- [ ] **Authentication & Authorization**: JWT integration
-- [ ] **API Gateway Integration**: Seamless gateway communication
-- [ ] **Advanced Filtering**: Search by multiple criteria
-- [ ] **Product Categories**: Hierarchical category system
-- [ ] **Inventory Management**: Stock tracking and alerts
+- [ ] **Domain Exceptions**: Custom domain-specific exceptions
+- [ ] **Unit Testing**: Comprehensive test suite for use cases and repository
+- [ ] **Advanced Filtering**: Search by multiple criteria with use cases
+- [ ] **Product Categories**: Hierarchical category system with Clean Architecture
+- [ ] **Inventory Management**: Stock tracking with domain events
 - [ ] **Image Upload**: Product image handling with cloud storage
+- [ ] **Validation Rules**: Complex business validation in domain layer
 
 ### 🎯 Phase 3 - Production Ready
 
-- [ ] **Caching Layer**: Redis integration for performance
-- [ ] **Event Sourcing**: Product lifecycle events
+- [ ] **Authentication & Authorization**: JWT integration with use cases
+- [ ] **API Gateway Integration**: Enhanced gateway communication patterns
+- [ ] **Caching Layer**: Redis integration with repository caching
+- [ ] **Event Sourcing**: Domain events for product lifecycle
 - [ ] **Monitoring**: Prometheus metrics and health checks
 - [ ] **Documentation**: OpenAPI/Swagger for service contracts
 - [ ] **CI/CD Pipeline**: Automated testing and deployment
