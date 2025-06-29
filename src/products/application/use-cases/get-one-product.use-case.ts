@@ -1,6 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { IProductRepository } from '../ports/product-repository.interface';
 import { Product } from 'src/products/domain';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class GetOneProductUseCase {
@@ -12,7 +13,10 @@ export class GetOneProductUseCase {
   async execute(id: number): Promise<Product> {
     const product = await this.repository.findById(id);
     if (!product) {
-      throw new NotFoundException('Product with id ' + id + ' not found');
+      throw new RpcException({
+        message: 'Product with id ' + id + ' not found',
+        status: HttpStatus.NOT_FOUND,
+      });
     }
     return product;
   }
