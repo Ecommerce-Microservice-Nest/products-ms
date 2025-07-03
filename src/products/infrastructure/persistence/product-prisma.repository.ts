@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { PaginationDto } from 'src/common';
 import { CreateProductDto } from '../../application/dto/create-product.dto';
 import { UpdateProductDto } from '../../application/dto/update-product.dto';
@@ -6,6 +6,7 @@ import { IProductRepository } from '../../application/ports/product-repository.i
 import { PrismaService } from 'src/database/prisma/prisma.service';
 import { Product } from '../../domain/entities/product.entity';
 import { MetaDataAllProducts } from 'src/products/domain';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class PrismaProductRepository implements IProductRepository {
@@ -39,7 +40,7 @@ export class PrismaProductRepository implements IProductRepository {
         limit: limit!,
         totalPages: lastPage,
       },
-      data: products.map((product) => Product.fromPrisma(product)), // ✅ Arrow function
+      data: products.map((product) => Product.fromPrisma(product)),
     };
   }
 
@@ -65,5 +66,25 @@ export class PrismaProductRepository implements IProductRepository {
       data: { available: false, deletedAt: new Date() },
     });
     return Product.fromPrisma(deleted);
+  }
+
+  async validateProducts(ids: number[]): Promise<Product[]> {
+    const products = await this.prisma.product.findMany({
+      where: {
+        id: { in: ids },
+        available: true,
+      },
+    });
+
+    if (products.length !== ids.length) {
+      const foundIds = products.map((product) => product.id);
+      const notFoundIds = ids.filter((id) => !foundIds.includes(id));
+      throw new RpcException({
+        message: `Products with IDs ${notFoundIds.join(', ')} not found`,
+        status: HttpStatus.NOT_FOUND,
+      });
+    }
+
+    return products.map((product) => Product.fromPrisma(product));
   }
 }

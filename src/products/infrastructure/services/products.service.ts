@@ -8,6 +8,7 @@ import {
   GetOneProductUseCase,
   UpdateProductUseCase,
   RemoveProductUseCase,
+  ValidateProductsUseCase,
 } from 'src/products/application';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class ProductsService {
     private readonly getOneProductUseCase: GetOneProductUseCase,
     private readonly updateProductUseCase: UpdateProductUseCase,
     private readonly removeProductUseCase: RemoveProductUseCase,
+    private readonly validateProductsUseCase: ValidateProductsUseCase,
   ) {}
 
   private readonly logger = new Logger('ProductsService');
@@ -44,5 +46,9 @@ export class ProductsService {
 
   async remove(id: number) {
     return await this.removeProductUseCase.execute(id);
+  }
+
+  async validateProducts(ids: number[]) {
+    return await this.validateProductsUseCase.execute(ids);
   }
 }

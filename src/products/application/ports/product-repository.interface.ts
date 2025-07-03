@@ -13,4 +13,5 @@ export interface IProductRepository {
   findById(id: number): Promise<Product | null>;
   update(id: number, data: UpdateProductDto): Promise<Product>;
   softDelete(id: number): Promise<Product>;
+  validateProducts(ids: number[]): Promise<Product[]>;
 }

@@ -6,6 +6,7 @@ import {
   GetOneProductUseCase,
   UpdateProductUseCase,
   RemoveProductUseCase,
+  ValidateProductsUseCase,
 } from './application';
 import {
   ProductsController,
@@ -22,6 +23,7 @@ import {
     GetOneProductUseCase,
     UpdateProductUseCase,
     RemoveProductUseCase,
+    ValidateProductsUseCase,
     {
       provide: 'PRODUCT_REPOSITORY',
       useClass: PrismaProductRepository,
